@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foggy — Путешествия в туманные уголки мира</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <style>
+        /* CSS Variables */
+        :root {
+            --bg-color: #F1F2EE;
+            --charcoal: #171C1A;
+            --forest: #233C34;
+            --sage: #8D9B92;
+            --foggy-gray: #D5DDDA;
+            --glass-bg: rgba(241, 242, 238, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        /* Reset & Base Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--charcoal);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            overflow-x: hidden;
+        }
+
+        /* Typography */
+        h1, h2, h3 {
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+            line-height: 1.05;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--charcoal);
+        }
+
+        /* Utilities & Layout */
+        .section-num {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--sage);
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .divider {
+            border: none;
+            border-top: 1px solid var(--foggy-gray);
+            margin: 2rem 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 4rem;
+        }
+
+        /* Glassmorphism */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: 1px solid var(--charcoal);
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background-color: var(--charcoal);
+            color: var(--bg-color);
+        }
+
+        .btn-primary:hover {
+            background-color: transparent;
+            color: var(--charcoal);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--charcoal);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--charcoal);
+            color: var(--bg-color);
+        }
+
+        /* 1. Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            height: 70px;
+            transition: background 0.3s ease;
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 4rem;
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: -0.03em;
+            color: var(--charcoal);
+            text-decoration: none;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2.5rem;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--charcoal);
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        nav a:hover {
+            color: var(--forest);
+        }
+
+        /* Mobile Menu Toggle */
+        .menu-toggle {
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+        }
+
+        .menu-toggle span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background-color: var(--charcoal);
+            transition: 0.3s;
+        }
+
+        /* 2. Hero Section */
+        #hero {
+            position: relative;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+
+        .hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 120%; /* Extra height for parallax movement */
+            background-size: cover;
+            background-position: center;
+            z-index: -1;
+            /* Placeholder premium-like moody gradient texture in case image lacks */
+            background-image: linear-gradient(rgba(23, 28, 26, 0.3), rgba(23, 28, 26, 0.4)), url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80');
+        }
+
+        /* Correct beautiful foggy forest background */
+        #hero .hero-bg {
+            background-image: linear-gradient(rgba(23, 28, 26, 0.2), rgba(23, 28, 26, 0.3)), url('https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1920&q=80');
+        }
+
+        .hero-content {
+            width: 100%;
+            color: #ffffff;
+            margin-top: 4rem;
+        }
+
+        .hero-content p {
+            color: #e5e5e5;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: flex-end;
+        }
+
+        .hero-title {
+            font-size: 8rem;
+            line-height: 0.9;
+            margin-bottom: 2rem;
+            color: #ffffff;
+        }
+
+        .hero-right h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            text-transform: none;
+            font-weight: 400;
+        }
+
+        .hero-right p {
+            max-width: 420px;
+            margin-bottom: 2.5rem;
+            font-size: 1.2rem;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            margin-bottom: 3rem;
+        }
+
+        .hero-actions .btn-primary {
+            background-color: #ffffff;
+            color: var(--charcoal);
+            border-color: #ffffff;
+        }
+
+        .hero-actions .btn-primary:hover {
+            background-color: transparent;
+            color: #ffffff;
+        }
+
+        .hero-actions .btn-secondary {
+            color: #ffffff;
+            border-color: #ffffff;
+        }
+
+        .hero-actions .btn-secondary:hover {
+            background-color: #ffffff;
+            color: var(--charcoal);
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 0.6rem 1.2rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        /* 3. About Section */
+        #about {
+            padding: 10rem 0;
+            background-color: var(--bg-color);
+        }
+
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6rem;
+        }
+
+        .about-left h2 {
+            font-size: 4rem;
+            color: var(--forest);
+            max-width: 500px;
+        }
+
+        .about-right {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .about-text {
+            font-size: 1.4rem;
+            margin-bottom: 4rem;
+            max-width: 540px;
+        }
+
+        .about-img-wrapper {
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+        }
+
+        .about-img {
+            width: 100%;
+            height: 100%;
+            background-image: url('https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1000&q=80');
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* 4. Format / Benefits Section */
+        #format {
+            padding-bottom: 10rem;
+        }
+
+        .format-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 3rem;
+            margin-top: 2rem;
+        }
+
+        .format-card {
+            border-top: 1px solid var(--charcoal);
+            padding-top: 2rem;
+        }
+
+        .format-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--charcoal);
+        }
+
+        .format-card p {
+            color: var(--charcoal);
+            font-size: 1rem;
+        }
+
+        /* Mid-photo Wide Section with Parallax */
+        .wide-photo-section {
+            position: relative;
+            height: 60vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .wide-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 130%;
+            background-image: linear-gradient(rgba(23, 28, 26, 0.4), rgba(23, 28, 26, 0.4)), url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            z-index: -1;
+        }
+
+        .wide-text {
+            color: #ffffff;
+            font-size: 2.5rem;
+            font-weight: 300;
+            text-align: center;
+            max-width: 800px;
+            padding: 0 2rem;
+            line-height: 1.3;
+        }
+
+        /* 5. Catalog Section */
+        #catalog {
+            padding: 10rem 0;
+            background-color: var(--bg-color);
+        }
+
+        .catalog-intro {
+            margin-bottom: 4rem;
+        }
+
+        .catalog-intro h2 {
+            font-size: 4rem;
+        }
+
+        .catalog-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 4rem 2rem;
+        }
+
+        /* Modular Swiss asymmetry for catalog */
+        .catalog-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item-size-large { grid-column: span 7; }
+        .item-size-small { grid-column: span 5; margin-top: 6rem; }
+        .item-size-medium { grid-column: span 6; }
+        .item-size-wide { grid-column: span 8; }
+        .item-size-narrow { grid-column: span 4; margin-top: 4rem; }
+
+        .catalog-img-box {
+            width: 100%;
+            aspect-ratio: 3/2;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            background-color: var(--foggy-gray);
+            position: relative;
+        }
+
+        .catalog-img {
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .catalog-item:hover .catalog-img {
+            transform: scale(1.03);
+        }
+
+        .catalog-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.5rem;
+        }
+
+        .catalog-title {
+            font-size: 1.8rem;
+            text-transform: none;
+        }
+
+        .catalog-country {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--sage);
+            font-weight: 600;
+        }
+
+        .catalog-desc {
+            font-size: 1rem;
+            color: var(--charcoal);
+            margin-bottom: 1rem;
+            max-width: 90%;
+        }
+
+        .catalog-specs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            border-top: 1px solid var(--foggy-gray);
+            padding-top: 0.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .spec-line span {
+            color: var(--sage);
+        }
+
+        .catalog-action-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        .catalog-price {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .catalog-disclaimer {
+            grid-column: span 12;
+            text-align: left;
+            font-size: 0.9rem;
+            color: var(--sage);
+            margin-top: 4rem;
+        }
+
+        /* 6. Map Section */
+        #map-section {
+            padding: 5rem 0 10rem 0;
+        }
+
+        #map-section h2 {
+            font-size: 4rem;
+            margin-bottom: 3rem;
+        }
+
+        .map-wrapper {
+            width: 100%;
+            height: 600px;
+            border: 1px solid var(--charcoal);
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: var(--foggy-gray);
+        }
+
+        .map-error {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--foggy-gray);
+            color: var(--charcoal);
+            font-size: 1.1rem;
+            padding: 2rem;
+            text-align: center;
+            z-index: 999;
+            display: none;
+        }
+
+        /* Custom Leaflet Popup Styling to match theme */
+        .leaflet-popup-content-wrapper {
+            background: var(--bg-color) !important;
+            color: var(--charcoal) !important;
+            border-radius: 0px !important;
+            font-family: var(--font-family) !important;
+            border: 1px solid var(--charcoal);
+            box-shadow: none !important;
+        }
+        .leaflet-popup-content {
+            margin: 12px 16px !important;
+        }
+        .leaflet-popup-content h4 {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+        .leaflet-popup-content p {
+            font-size: 0.9rem;
+            margin: 0;
+        }
+        .leaflet-popup-tip {
+            background: var(--bg-color) !important;
+            border: 1px solid var(--charcoal);
+            box-shadow: none !important;
+        }
+
+        /* 7. Price Section */
+        #price {
+            padding-bottom: 10rem;
+        }
+
+        #price h2 {
+            font-size: 4rem;
+            margin-bottom: 4rem;
+        }
+
+        .price-table {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .price-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            padding: 1.5rem 0;
+            border-bottom: 1px solid var(--charcoal);
+            align-items: center;
+        }
+
+        .price-row-header {
+            border-bottom: 2px solid var(--charcoal);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            color: var(--sage);
+            padding-bottom: 0.8rem;
+        }
+
+        .price-destination {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .price-duration {
+            font-size: 1.1rem;
+        }
+
+        .price-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .price-disclaimer {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: var(--sage);
+        }
+
+        /* 8. Contacts Section */
+        #contacts {
+            padding: 5rem 0 12rem 0;
+        }
+
+        #contacts h2 {
+            font-size: 4rem;
+            margin-bottom: 3rem;
+        }
+
+        .contacts-content {
+            margin-top: 4rem;
+        }
+
+        .email-link {
+            font-size: 4.5rem;
+            font-weight: 700;
+            color: var(--charcoal);
+            text-decoration: none;
+            letter-spacing: -0.03em;
+            display: inline-block;
+            line-height: 1;
+            transition: color 0.3s ease;
+        }
+
+        .email-link:hover {
+            color: var(--forest);
+        }
+
+        .contacts-sub {
+            font-size: 1rem;
+            color: var(--sage);
+            margin-top: 1rem;
+        }
+
+        /* 9. Footer */
+        footer {
+            background-color: var(--charcoal);
+            color: var(--bg-color);
+            padding: 4rem 0;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            align-items: flex-start;
+        }
+
+        .footer-logo {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            text-transform: uppercase;
+            color: #ffffff;
+            margin-bottom: 1rem;
+        }
+
+        .footer-tagline {
+            color: var(--sage);
+            font-size: 1rem;
+            max-width: 300px;
+        }
+
+        .footer-info {
+            font-size: 0.85rem;
+            color: var(--sage);
+            line-height: 1.6;
+        }
+
+        .back-to-top {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-align: right;
+            transition: opacity 0.3s;
+        }
+
+        .back-to-top:hover {
+            opacity: 0.7;
+        }
+
+        /* Responsive Layouts */
+        @media (max-width: 1024px) {
+            .container { padding: 0 2rem; }
+            .header-container { padding: 0 2rem; }
+            .hero-title { font-size: 5.5rem; }
+            .about-grid { grid-template-columns: 1fr; gap: 3rem; }
+            .about-left h2 { font-size: 3rem; }
+            .format-grid { grid-template-columns: 1fr; gap: 2rem; }
+            .catalog-grid { display: flex; flex-direction: column; gap: 4rem; }
+            .catalog-item { grid-column: span 12 !important; margin-top: 0 !important; }
+            .email-link { font-size: 3rem; }
+        }
+
+        @media (max-width: 768px) {
+            header { height: 60px; }
+            .menu-toggle { display: flex; }
+            nav {
+                position: fixed;
+                top: 60px;
+                left: 0;
+                width: 100%;
+                background: var(--bg-color);
+                padding: 2rem;
+                border-bottom: 1px solid var(--charcoal);
+                display: none;
+            }
+            nav.active { display: block; }
+            nav ul { flex-direction: column; gap: 1.5rem; }
+            
+            .hero-grid { grid-template-columns: 1fr; }
+            .hero-title { font-size: 4rem; margin-bottom: 1rem; }
+            .hero-right h2 { font-size: 1.8rem; }
+            
+            .wide-text { font-size: 1.6rem; }
+            .catalog-intro h2, #map-section h2, #price h2, #contacts h2 { font-size: 2.5rem; }
+            
+            .price-row { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+            .price-value { grid-column: span 2; text-align: left; margin-top: 0.5rem; }
+            .price-row-header { display: none; }
+            
+            .email-link { font-size: 1.8rem; word-break: break-all; }
+            .footer-grid { grid-template-columns: 1fr; gap: 2rem; }
+            .back-to-top { text-align: left; }
+            
+            .map-wrapper { height: 400px; }
+        }
+
+        /* Accessibility: Reduced Motion */
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .hero-bg, .wide-bg { transform: none !important; top: 0 !important; height: 100% !important; }
+            .catalog-img { transition: none; }
+            .catalog-item:hover .catalog-img { transform: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. Header / Навигация -->
+    <header id="main-header" class="glass-panel">
+        <div class="header-container">
+            <a href="#" class="logo">Foggy</a>
+            <button class="menu-toggle" aria-label="Открыть меню" onclick="toggleMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <nav id="nav-menu">
+                <ul>
+                    <li><a href="#about" onclick="closeMenu()">О проекте</a></li>
+                    <li><a href="#catalog" onclick="closeMenu()">Направления</a></li>
+                    <li><a href="#map-section" onclick="closeMenu()">Карта</a></li>
+                    <li><a href="#price" onclick="closeMenu()">Стоимость</a></li>
+                    <li><a href="#contacts" onclick="closeMenu()">Контакты</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 2. Hero / Главный экран -->
+    <section id="hero">
+        <div class="hero-bg" id="hero-parallax-bg"></div>
+        <div class="container hero-content">
+            <div class="hero-grid">
+                <div>
+                    <h1 class="hero-title">Foggy</h1>
+                </div>
+                <div class="hero-right">
+                    <h2>Туда, где мир становится тише</h2>
+                    <p>Походы маленькими группами. Туманные леса, горные тропы и время просто смотреть.</p>
+                    <div class="hero-actions">
+                        <a href="#catalog" class="btn btn-primary">Выбрать направление</a>
+                        <a href="#map-section" class="btn btn-secondary">Открыть карту</a>
+                    </div>
+                    <div class="hero-badge glass-panel">4–8 человек / неспешный темп</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. О проекте -->
+    <section id="about">
+        <div class="container">
+            <span class="section-num">01 / ФИЛОСОФИЯ</span>
+            <div class="about-grid">
+                <div class="about-left">
+                    <h2>Меньше людей. Больше пространства.</h2>
+                </div>
+                <div class="about-right">
+                    <p class="about-text">Мы верим, что природа раскрывается в тишине. Маршруты Foggy созданы для тех, кто не ищет спортивных рекордов, а хочет почувствовать ритм шага, заметить движение тумана между вековыми деревьями и услышать тишину горных долин.</p>
+                    <div class="about-img-wrapper">
+                        <div class="about-img"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. Формат путешествий / Преимущества -->
+    <section id="format">
+        <div class="container">
+            <div class="format-grid">
+                <div class="format-card">
+                    <span class="section-num">.01</span>
+                    <h3>Маленькая группа</h3>
+                    <p>Всего от 4 до 8 участников. Это позволяет сохранить камерную атмосферу, легче адаптироваться на тропе и не создавать лишнего шума в уединенных местах.</p>
+                </div>
+                <div class="format-card">
+                    <span class="section-num">.02</span>
+                    <h3>Свободный ритм</h3>
+                    <p>Мы закладываем достаточно времени на остановки, фотографии и простое созерцание. Никакой спешки — лучший вид открывается тем, кто умеет ждать.</p>
+                </div>
+                <div class="format-card">
+                    <span class="section-num">.03</span>
+                    <h3>Бережное присутствие</h3>
+                    <p>Мы бережно относимся к тропам и дикой природе. Оставляем после себя только следы шагов и уносим с собой только глубокие впечатления.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Разделительная широкая фото-секция с параллаксом -->
+    <div class="wide-photo-section">
+        <div class="wide-bg" id="wide-parallax-bg"></div>
+        <div class="wide-text">«Иногда лучший вид — тот, который открывается медленно»</div>
+    </div>
+
+    <!-- 5. Каталог направлений -->
+    <section id="catalog">
+        <div class="container">
+            <div class="catalog-intro">
+                <span class="section-num">02 / КАТАЛОГ</span>
+                <h2>Места, которые хочется почувствовать</h2>
+            </div>
+
+            <div class="catalog-grid">
+                <!-- 1. Остров Скай -->
+                <div class="catalog-item item-size-large">
+                    <div class="catalog-img-box">
+                        <div class="catalog-img" style="background-image: url('https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?auto=format&fit=crop&w=800&q=80');"></div>
+                    </div>
+                    <div class="catalog-meta">
+                        <h3 class="catalog-title">Остров Скай</h3>
+                        <span class="catalog-country">Шотландия</span>
+                    </div>
+                    <p class="catalog-desc">Суровые скалистые берега, холмы, покрытые изумрудным мхом, и бесконечная игра облаков над древними шотландскими замками.</p>
+                    <div class="catalog-specs">
+                        <div class="spec-line"><span>Пейзаж:</span> Скалы и фьорды</div>
+                        <div class="spec-line"><span>Группа:</span> 4–8 человек</div>
+                        <div class="spec-line"><span>Время:</span> 8 дней</div>
+                    </div>
+                    <div class="catalog-action-row">
+                        <span class="catalog-price">145 000 ₽</span>
+                        <button class="btn btn-secondary" onclick="focusOnMap(57.4124, -6.1963, 0)">На карте</button>
+                    </div>
+                </div>
+
+                <!-- 2. Мадейра -->
+                <div class="catalog-item item-size-small">
+                    <div class="catalog-img-box">
+                        <div class="catalog-img" style="background-image: url('https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=800&q=80');"></div>
+                    </div>
+                    <div class="catalog-meta">
+                        <h3 class="catalog-title">Мадейра</h3>
+                        <span class="catalog-country">Португалия</span>
+                    </div>
+                    <p class="catalog-desc">Тропы вдоль древних левад, реликтовые лавровые леса, окутанные плотным атлантическим туманом над самым океаном.</p>
+                    <div class="catalog-specs">
+                        <div class="spec-line"><span>Пейзаж:</span> Лавровые леса</div>
+                        <div class="spec-line"><span>Группа:</span> 4–8 человек</div>
+                        <div class="spec-line"><span>Время:</span> 7 дней</div>
+                    </div>
+                    <div class="catalog-action-row">
+                        <span class="catalog-price">130 000 ₽</span>
+                        <button class="btn btn-secondary" onclick="focusOnMap(32.7607, -16.9595, 1)">На карте</button>
+                    </div>
+                </div>
+
+                <!-- 3. Чжанцзяцзе -->
+                <div class="catalog-item item-size-medium">
+                    <div class="catalog-img-box">
+                        <div class="catalog-img" style="background-image: url('https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=800&q=80');"></div>
+                    </div>
+                    <div class="catalog-meta">
+                        <h3 class="catalog-title">Чжанцзяцзе</h3>
+                        <span class="catalog-country">Китай</span>
+                    </div>
+                    <p class="catalog-desc">Парящие каменные колонны-песчаники, прорезающие облака, и тихие бамбуковые рощи внизу у подножия великих гор.</p>
+                    <div class="catalog-specs">
+                        <div class="spec-line"><span>Пейзаж:</span> Карстовые пики</div>
+                        <div class="spec-line"><span>Группа:</span> 4–8 человек</div>
+                        <div class="spec-line"><span>Время:</span> 9 дней</div>
+                    </div>
+                    <div class="catalog-action-row">
+                        <span class="catalog-price">165 000 ₽</span>
+                        <button class="btn btn-secondary" onclick="focusOnMap(29.3154, 110.4348, 2)">На карте</button>
+                    </div>
+                </div>
+
+                <!-- 4. Милфорд-Саунд -->
+                <div class="catalog-item item-size-medium">
+                    <div class="catalog-img-box">
+                        <div class="catalog-img" style="background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80');"></div>
+                    </div>
+                    <div class="catalog-meta">
+                        <h3 class="catalog-title">Милфорд-Саунд</h3>
+                        <span class="catalog-country">Новая Зеландия</span>
+                    </div>
+                    <p class="catalog-desc">Глубокие фьорды, рождающие сокрушительные водопады после дождей, и влажные дождевые леса на краю обитаемого мира.</p>
+                    <div class="catalog-specs">
+                        <div class="spec-line"><span>Пейзаж:</span> Фьорды и джунгли</div>
+                        <div class="spec-line"><span>Группа:</span> 4–8 человек</div>
+                        <div class="spec-line"><span>Время:</span> 10 дней</div>
+                    </div>
+                    <div class="catalog-action-row">
+                        <span class="catalog-price">195 000 ₽</span>
+                        <button class="btn btn-secondary" onclick="focusOnMap(-44.6414, 167.8974, 3)">На карте</button>
+                    </div>
+                </div>
+
+                <!-- 5. Монтеверде -->
+                <div class="catalog-item item-size-wide">
+                    <div class="catalog-img-box">
+                        <div class="catalog-img" style="background-image: url('https://images.unsplash.com/photo-1568515045052-f9a854d70bfd?auto=format&fit=crop&w=800&q=80');"></div>
+                    </div>
+                    <div class="catalog-meta">
+                        <h3 class="catalog-title">Монтеверде</h3>
+                        <span class="catalog-country">Коста-Рика</span>
+                    </div>
+                    <p class="catalog-desc">Облачный тропический лес, где кроны деревьев постоянно спрятаны в прохладной дымке, укрывающей сотни редких птиц и орхидей.</p>
+                    <div class="catalog-specs">
+                        <div class="spec-line"><span>Пейзаж:</span> Облачный лес</div>
+                        <div class="spec-line"><span>Группа:</span> 4–8 человек</div>
+                        <div class="spec-line"><span>Время:</span> 8 дней</div>
+                    </div>
+                    <div class="catalog-action-row">
+                        <span class="catalog-price">155 000 ₽</span>
+                        <button class="btn btn-secondary" onclick="focusOnMap(10.2750, -84.8255, 4)">На карте</button>
+                    </div>
+                </div>
+
+                <!-- 6. Шварцвальд -->
+                <div class="catalog-item item-size-narrow">
+                    <div class="catalog-img-box">
+                        <div class="catalog-img" style="background-image: url('https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80');"></div>
+                    </div>
+                    <div class="catalog-meta">
+                        <h3 class="catalog-title">Шварцвальд</h3>
+                        <span class="catalog-country">Германия</span>
+                    </div>
+                    <p class="catalog-desc">Тёмные хвойные леса, туманные озера, скрытые в низинах холмов, и тихие лесные тропы, усыпанные мягкой сухой хвоей.</p>
+                    <div class="catalog-specs">
+                        <div class="spec-line"><span>Пейзаж:</span> Хвойный массив</div>
+                        <div class="spec-line"><span>Группа:</span> 4–8 человек</div>
+                        <div class="spec-line"><span>Время:</span> 6 дней</div>
+                    </div>
+                    <div class="catalog-action-row">
+                        <span class="catalog-price">115 000 ₽</span>
+                        <button class="btn btn-secondary" onclick="focusOnMap(48.2682, 8.2436, 5)">На карте</button>
+                    </div>
+                </div>
+
+                <div class="catalog-disclaimer">
+                    <span>* Туман полностью зависит от погодных условий и не гарантирован в конкретные дни маршрута.</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. Интерактивная карта -->
+    <section id="map-section">
+        <div class="container">
+            <span class="section-num">03 / ГЕОГРАФИЯ</span>
+            <h2>География тишины</h2>
+            <div class="map-wrapper">
+                <div id="map"></div>
+                <div id="map-err" class="map-error">Не удалось загрузить интерактивную карту. Все данные о маршрутах и ценах полностью доступны в каталоге и прайс-листе выше.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. Стоимость -->
+    <section id="price">
+        <div class="container">
+            <span class="section-num">04 / СТОИМОСТЬ</span>
+            <h2>Выбрать свой маршрут</h2>
+            
+            <div class="price-table">
+                <div class="price-row price-row-header">
+                    <div>Направление</div>
+                    <div>Длительность</div>
+                    <div style="text-align: right;">Стоимость (за человека)</div>
+                </div>
+                <div class="price-row">
+                    <div class="price-destination">Остров Скай, Шотландия</div>
+                    <div class="price-duration">8 дней</div>
+                    <div class="price-value">от 145 000 ₽</div>
+                </div>
+                <div class="price-row">
+                    <div class="price-destination">Мадейра, Португалия</div>
+                    <div class="price-duration">7 дней</div>
+                    <div class="price-value">от 130 000 ₽</div>
+                </div>
+                <div class="price-row">
+                    <div class="price-destination">Чжанцзяцзе, Китай</div>
+                    <div class="price-duration">9 дней</div>
+                    <div class="price-value">от 165 000 ₽</div>
+                </div>
+                <div class="price-row">
+                    <div class="price-destination">Милфорд-Саунд, Новая Зеландия</div>
+                    <div class="price-duration">10 дней</div>
+                    <div class="price-value">от 195 000 ₽</div>
+                </div>
+                <div class="price-row">
+                    <div class="price-destination">Монтеверде, Коста-Рика</div>
+                    <div class="price-duration">8 дней</div>
+                    <div class="price-value">от 155 000 ₽</div>
+                </div>
+                <div class="price-row">
+                    <div class="price-destination">Шварцвальд, Германия</div>
+                    <div class="price-duration">6 дней</div>
+                    <div class="price-value">от 115 000 ₽</div>
+                </div>
+            </div>
+            
+            <p class="price-disclaimer">Учебные предложения. Цены указаны исключительно в демонстрационных целях, международный авиаперелёт к началу маршрута не включён.</p>
+        </div>
+    </section>
+
+    <!-- 8. Контакты -->
+    <section id="contacts">
+        <div class="container">
+            <span class="section-num">05 / СВЯЗЬ</span>
+            <h2>Начнём с разговора</h2>
+            <div class="contacts-content">
+                <a href="mailto:hello@foggy.example" class="email-link">hello@foggy.example</a>
+                <p class="contacts-sub">Демонстрационный учебный адрес электронной почты</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 9. Footer / Подвал -->
+    <footer>
+        <div class="container footer-grid">
+            <div>
+                <div class="footer-logo">Foggy</div>
+                <p class="footer-tagline">Проводники в мир туманных лесов, уединенных троп и глубокой природной тишины.</p>
+            </div>
+            <div class="footer-info">
+                Учебный проект.<br>Организация, туры и контакты являются полностью вымышленными и демонстрационными.
+            </div>
+            <div style="text-align: right;">
+                <a href="#" class="back-to-top">Наверх ↑</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        // Menu Toggle Operations
+        function toggleMenu() {
+            const nav = document.getElementById('nav-menu');
+            nav.classList.toggle('active');
+        }
+        function closeMenu() {
+            const nav = document.getElementById('nav-menu');
+            nav.classList.remove('active');
+        }
+
+        // Header Background on Scroll
+        window.addEventListener('scroll', function() {
+            const header = document.getElementById('main-header');
+            if (window.scrollY > 50) {
+                header.style.background = 'rgba(241, 242, 238, 0.85)';
+            } else {
+                header.style.background = 'rgba(241, 242, 238, 0.4)';
+            }
+        });
+
+        // Parallax Effect Implementation
+        const heroBg = document.getElementById('hero-parallax-bg');
+        const wideBg = document.getElementById('wide-parallax-bg');
+        
+        let initialRequest = null;
+        
+        function updateParallax() {
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || window.innerWidth < 768) {
+                if(heroBg) heroBg.style.transform = 'none';
+                if(wideBg) wideBg.style.transform = 'none';
+                return;
+            }
+            
+            const scrolled = window.scrollY;
+            
+            // Hero Parallax
+            if (heroBg) {
+                heroBg.style.transform = `translateY(${scrolled * 0.4}px)`;
+            }
+            
+            // Wide Mid Section Parallax
+            if (wideBg) {
+                const rect = wideBg.parentElement.getBoundingClientRect();
+                const viewHeight = window.innerHeight;
+                if (rect.top < viewHeight && rect.bottom > 0) {
+                    const relativeOffset = (viewHeight - rect.top);
+                    wideBg.style.transform = `translateY(${(relativeOffset * 0.15) - 50}px)`;
+                }
+            }
+            
+            initialRequest = null;
+        }
+
+        window.addEventListener('scroll', function() {
+            if (!initialRequest) {
+                initialRequest = requestAnimationFrame(updateParallax);
+            }
+        });
+
+        // Interactive Leaflet Map Configuration
+        let map;
+        let markers = [];
+        
+        const destinations = [
+            { name: "Остров Скай", country: "Шотландия", coords: [57.4124, -6.1963], text: "8 дней • 145 000 ₽" },
+            { name: "Мадейра", country: "Португалия", coords: [32.7607, -16.9595], text: "7 дней • 130 000 ₽" },
+            { name: "Чжанцзяцзе", country: "Китай", coords: [29.3154, 110.4348], text: "9 дней • 165 000 ₽" },
+            { name: "Милфорд-Саунд", country: "Новая Зеландия", coords: [-44.6414, 167.8974], text: "10 дней • 195 000 ₽" },
+            { name: "Монтеверде", country: "Коста-Рика", coords: [10.2750, -84.8255], text: "8 дней • 155 000 ₽" },
+            { name: "Шварцвальд", country: "Германия", coords: [48.2682, 8.2436], text: "6 дней • 115 000 ₽" }
+        ];
+
+        try {
+            // Global world view init
+            map = L.map('map', {
+                scrollWheelZoom: false
+            }).setView([20.0, 0.0], 2);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            destinations.forEach((dest, idx) => {
+                const popupContent = `<div><h4>${dest.name}</h4><p style="color:#8D9B92; font-weight:600; text-transform:uppercase; font-size:0.75rem; margin-bottom:4px;">${dest.country}</p><p>${dest.text}</p></div>`;
+                const marker = L.marker(dest.coords).addTo(map).bindPopup(popupContent);
+                markers.push(marker);
+            });
+        } catch (e) {
+            console.error("Leaflet failed to load:", e);
+            document.getElementById('map-err').style.display = 'flex';
+        }
+
+        function focusOnMap(lat, lng, idx) {
+            const mapSection = document.getElementById('map-section');
+            if (mapSection) {
+                mapSection.scrollIntoView({ behavior: 'smooth' });
+                
+                if (map) {
+                    setTimeout(() => {
+                        map.setView([lat, lng], 7, { animate: true, duration: 1.5 });
+                        if(markers[idx]) {
+                            markers[idx].openPopup();
+                        }
+                    }, 600);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
